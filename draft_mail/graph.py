@@ -11,7 +11,7 @@ from msgraph.generated.models.importance import Importance
 from msgraph.generated.models.item_body import ItemBody
 from msgraph.generated.models.message import Message
 from msgraph.generated.models.recipient import Recipient
-from typing import List
+from typing import List, Any, Dict
 
 
 class Graph:
@@ -205,3 +205,15 @@ class Graph:
                     await client.put(update_url, headers=headers, content=chunk)
 
         return response
+
+    @staticmethod
+    def get_login_link(object_id: str) -> Dict[str, Any]:
+        extra_context = {}
+        scopes = "User.Read Mail.Read Mail.Send Mail.ReadWrite"
+        client_id = os.getenv("CLIENT_ID")
+        tenant_id = os.getenv('TENANT_ID')
+        redirect_uri = os.getenv('REDIRECT_URI')
+        auth_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&response_mode=query&scope={scopes}&state={object_id}"
+        extra_context['ms_auth_link'] = auth_url
+        
+        return extra_context
