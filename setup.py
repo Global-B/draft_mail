@@ -10,6 +10,12 @@ setup(
     author='Felix Guzman',
     author_email='felixg@clickping.do',
     url='https://github.com/Global-B/draft_mail',
+    install_requires=[
+        'azure-identity==1.17.1',
+        'msgraph-sdk==1.5.4',
+        'typing-extensions==72.1.0',
+        'httpx==0.27.0',
+    ],
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
