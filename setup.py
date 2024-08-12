@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='django-insurance-draft-mail',
+    name='draft-mail',
     version='0.1',
     packages=find_packages(),
     include_package_data=True,
@@ -9,7 +9,7 @@ setup(
     long_description=open('README.md').read(),
     author='Felix Guzman',
     author_email='felixg@clickping.do',
-    url='https://github.com/Global-B/django_insurance_draft_mail',
+    url='https://github.com/Global-B/draft_mail',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
