@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='draft-mail',
-    version='0.1',
+    version='0.2',
     packages=find_packages(),
     include_package_data=True,
     description='A Django package that provides a graph api to send draft emails',
