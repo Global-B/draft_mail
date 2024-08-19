@@ -69,75 +69,6 @@ class Graph:
 
         return await self.user_client.me.messages.post(message)
     
-    # create a function to attatch a remote file
-    async def attach_remote_file(self, message_id: str, file_url: str, file_name: str):
-        # Get the file
-        response = requests.get(file_url)
-        file_content = response.content
-        file_size = len(file_content)
-        encoded_file_content = base64.b64encode(file_content).decode("utf-8")
-        
-        # file_name = file_name.split("/")[-1] if "/" in file_name else file_name
-
-        # Get the token
-        token = self.client_secret_credential.get_token(*self.scopes)
-        # https://learn.microsoft.com/en-us/graph/api/message-post-attachments?view=graph-rest-1.0&tabs=http#tabpanel_1_python
-        if file_size < 3 * 1024 * 1024:  # 3MB
-            data = {
-                "@odata.type": "#microsoft.graph.fileAttachment",
-                "name": file_name,
-                "contentBytes": encoded_file_content,
-            }
-
-            url = (
-                f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments"
-            )
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token.token}",
-            }
-            response = requests.post(url, headers=headers, data=json.dumps(data))
-
-        else:
-            # https://learn.microsoft.com/en-us/graph/api/attachment-createuploadsession?view=graph-rest-1.0&tabs=http
-            chunk_size = 4 * 1024 * 1024  # 4MB
-            chunks = [
-                file_content[i : i + chunk_size]
-                for i in range(0, len(file_content), chunk_size)
-            ]
-
-            data = {
-                "AttachmentItem": {
-                    "attachmentType": "file",
-                    "name": file_name,
-                    "size": file_size,
-                }
-            }
-
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments/createUploadSession"
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token.token}",
-            }
-            response = requests.post(url, headers=headers, data=json.dumps(data))
-
-            update_url = response.json().get("uploadUrl")
-            async with httpx.AsyncClient() as client:
-                for i, chunk in enumerate(chunks):
-                    start = i * chunk_size
-                    end = (
-                        start + len(chunk) - 1
-                    )  # Calculate the end based on the actual size of the chunk
-                    headers = {
-                        "Content-Length": str(len(chunk)),
-                        "Content-Type": "application/octet-stream",
-                        "Content-Range": f"bytes {start}-{end}/{file_size}",
-                    }
-                    await client.put(update_url, headers=headers, content=chunk)
-
-        return response
-        
-
     async def attach_local_file(self, message_id: str, file_path: str, file_name: str):
         file_size = os.path.getsize(file_path)
 
@@ -257,6 +188,24 @@ class Graph:
                         "Content-Range": f"bytes {start}-{end}/{len(file_bytes)}",
                     }
                     await client.put(update_url, headers=headers, content=chunk)
+        return response
+    
+    async def attach_remote_file(self, message_id: str, file_url: str, file_name: str):
+        # Get the file
+        response = requests.get(file_url)
+        file_content = response.content
+        content_disposition = response.headers.get("Content-Disposition")
+
+        if content_disposition and "filename" in content_disposition:
+            # Extrae el nombre del archivo del encabezado
+            header_file_name = content_disposition.split("filename=")[-1].strip('"')
+        else:
+            header_file_name = None  # No se encontró el nombre del archivo en los encabezados
+            
+        
+        encoded_file_content = base64.b64encode(file_content).decode("utf-8")
+        response = await self.attach_bytes(message_id, encoded_file_content, header_file_name or file_name)
+
         return response
 
     @staticmethod
