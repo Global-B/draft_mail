@@ -205,6 +205,59 @@ class Graph:
                     await client.put(update_url, headers=headers, content=chunk)
 
         return response
+    
+    async def attach_bytes(self, message_id: str, file_bytes: bytes, file_name: str):
+        # Get the token
+        token = self.client_secret_credential.get_token(*self.scopes)
+        # https://learn.microsoft.com/en-us/graph/api/message-post-attachments?view=graph-rest-1.0&tabs=http#tabpanel_1_python
+        if len(file_bytes) < 3 * 1024 * 1024:  # 3MB
+            data = {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": file_name,
+                "contentBytes": base64.b64encode(file_bytes).decode("utf-8"),
+            }
+            url = (
+                f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments"
+            )
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token.token}",
+            }
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+        else:
+            # https://learn.microsoft.com/en-us/graph/api/attachment-createuploadsession?view=graph-rest-1.0&tabs=http
+            chunk_size = 4 * 1024 * 1024  # 4MB
+            chunks = [
+                file_bytes[i : i + chunk_size]
+                for i in range(0, len(file_bytes), chunk_size)
+            ]            
+            data = {
+                "AttachmentItem": {
+                    "attachmentType": "file",
+                    "name": file_name,
+                    "size": len(file_bytes),
+                }
+            }
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments/createUploadSession"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token.token}",
+            }
+            response = requests.post(url, headers=headers, data=json.dumps(data))
+            update_url = response.json().get("uploadUrl")
+            async with httpx.AsyncClient() as client:
+                for i, chunk in enumerate(chunks):
+                    start = i * chunk_size
+                    end = (
+                        start + len(chunk) - 1
+                    )  # Calculate the end based on the actual size of the chunk
+                    headers = {
+                        "Content-Length": str(len(chunk)),
+                        "Content-Type": "application/octet-stream",
+                        "Content-Range": f"bytes {start}-{end}/{len(file_bytes)}",
+                    }
+                    await client.put(update_url, headers=headers, content=chunk)
+        return response
 
     @staticmethod
     def get_login_link(object_id: str) -> Dict[str, Any]:
