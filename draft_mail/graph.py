@@ -201,10 +201,8 @@ class Graph:
             header_file_name = content_disposition.split("filename=")[-1].strip('"')
         else:
             header_file_name = None  # No se encontró el nombre del archivo en los encabezados
-            
-        
-        encoded_file_content = base64.b64encode(file_content).decode("utf-8")
-        response = await self.attach_bytes(message_id, encoded_file_content, header_file_name or file_name)
+                
+        response = await self.attach_bytes(message_id, file_content, header_file_name or file_name)
 
         return response
 
