@@ -194,15 +194,8 @@ class Graph:
         # Get the file
         response = requests.get(file_url)
         file_content = response.content
-        content_disposition = response.headers.get("Content-Disposition")
-
-        if content_disposition and "filename" in content_disposition:
-            # Extrae el nombre del archivo del encabezado
-            header_file_name = content_disposition.split("filename=")[-1].strip('"')
-        else:
-            header_file_name = None  # No se encontró el nombre del archivo en los encabezados
-                
-        response = await self.attach_bytes(message_id, file_content, header_file_name or file_name)
+         
+        response = await self.attach_bytes(message_id, file_content, file_name)
 
         return response
 
