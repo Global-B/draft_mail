@@ -7,6 +7,7 @@ from azure.identity import AuthorizationCodeCredential
 from azure.core.credentials import AccessToken
 from msgraph import GraphServiceClient
 from typing import List, Any, Dict, Optional
+from urllib.parse import urlencode
 
 
 class Graph:
@@ -235,8 +236,24 @@ class Graph:
         client_id = os.getenv("CLIENT_ID")
         tenant_id = os.getenv('TENANT_ID')
         redirect_uri = os.getenv('REDIRECT_URI')
-        auth_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?client_id={
-            client_id}&response_type=code&redirect_uri={redirect_uri}&response_mode=query&scope={scopes}&state={object_id}"
+
+        base_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
+
+        # Create a dictionary of query parameters
+        query_params = {
+            "client_id": client_id,
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "response_mode": "query",
+            "scope": scopes,
+            "state": object_id
+        }
+
+        # Construct the full URL
+        auth_url = f"{base_url}?{urlencode(query_params)}"
+
+        # Add to extra_context
         extra_context['ms_auth_link'] = auth_url
+        
 
         return extra_context
